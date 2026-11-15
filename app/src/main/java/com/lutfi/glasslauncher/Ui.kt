@@ -172,13 +172,15 @@ fun ClockHeader() {
         }
     }
     val date = Date(now)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Text("Hello, Lutfi", color = Champagne, fontSize = 24.sp, fontWeight = FontWeight.Medium)
     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
         Text(
             SimpleDateFormat("HH:mm", Locale.UK).format(date),
             fontFamily = BarlowCondensed,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 128.sp,
-            lineHeight = 116.sp,
+            fontSize = 116.sp,
+            lineHeight = 106.sp,
             letterSpacing = (-2).sp,
             style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum")
         )
@@ -188,6 +190,7 @@ fun ClockHeader() {
             fontSize = 22.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
+    }
     }
 }
 
