@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent { LauncherRoot(showDrawer) }
     }
 
-    // Tekan butang Home bila dah di launcher: tutup "Semua app" dan balik ke skrin utama.
+    // Pressing Home while on the launcher closes All apps and returns to the home screen.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         showDrawer.value = false
@@ -29,14 +29,16 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun LauncherRoot(showDrawer: MutableState<Boolean>) {
-    Box(Modifier.fillMaxSize().glowBackground()) {
-        if (showDrawer.value) {
-            BackHandler { showDrawer.value = false }
-            AppDrawer(onClose = { showDrawer.value = false })
-        } else {
-            // Di skrin utama, butang Back tidak buat apa-apa.
-            BackHandler { }
-            HomeScreen(onOpenDrawer = { showDrawer.value = true })
+    GlassTheme {
+        Box(Modifier.fillMaxSize().horizonBackground()) {
+            if (showDrawer.value) {
+                BackHandler { showDrawer.value = false }
+                AppDrawer(onClose = { showDrawer.value = false })
+            } else {
+                // Back does nothing on the home screen.
+                BackHandler { }
+                HomeScreen(onOpenDrawer = { showDrawer.value = true })
+            }
         }
     }
 }

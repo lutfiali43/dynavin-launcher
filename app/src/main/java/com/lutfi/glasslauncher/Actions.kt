@@ -17,12 +17,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.drawable.toBitmap
 
-/** Servis kosong: hanya perlu wujud supaya launcher boleh baca & kawal muzik yang sedang main. */
+/** Empty service: it only needs to exist so the launcher can read and control what is playing. */
 class MediaListener : NotificationListenerService()
 
 data class AppEntry(val label: String, val pkg: String, val cls: String)
 
-/** Simpanan kecil dalam unit (alamat Rumah / Pejabat). Tiada apa-apa dihantar keluar. */
+/** Small on-device storage (Home / Office addresses). Nothing leaves the unit. */
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("glass", Context.MODE_PRIVATE)
     fun get(key: String): String = sp.getString(key, "") ?: ""
@@ -55,7 +55,7 @@ object Apps {
             .addCategory(Intent.CATEGORY_LAUNCHER)
             .setClassName(app.pkg, app.cls)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-        if (!Actions.start(context, intent)) Actions.toast(context, "Tak dapat buka ${app.label}")
+        if (!Actions.start(context, intent)) Actions.toast(context, "Couldn't open ${app.label}")
     }
 }
 
@@ -81,12 +81,12 @@ object Actions {
     }
 
     fun openMaps(context: Context) {
-        if (!launchPackage(context, MAPS)) toast(context, "Google Maps tak dijumpai dalam unit")
+        if (!launchPackage(context, MAPS)) toast(context, "Google Maps isn't installed")
     }
 
     fun openYouTube(context: Context) {
         if (!launchPackage(context, YOUTUBE) && !launchPackage(context, YT_MUSIC)) {
-            toast(context, "YouTube tak dijumpai dalam unit")
+            toast(context, "YouTube isn't installed")
         }
     }
 
@@ -97,16 +97,16 @@ object Actions {
         if (start(context, nav)) return
         val geo = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(address)))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (!start(context, geo)) toast(context, "Tiada app peta untuk navigasi")
+        if (!start(context, geo)) toast(context, "No maps app found for directions")
     }
 
-    /** Mod Pandu: buka Maps, kemudian YouTube di sebelah (skrin terbelah, jika unit benarkan). */
+    /** Split screen: open Maps, then YouTube beside it (if the unit allows multi-window). */
     fun driveMode(context: Context) {
         val pm = context.packageManager
         val maps = pm.getLaunchIntentForPackage(MAPS)
         val media = pm.getLaunchIntentForPackage(YOUTUBE) ?: pm.getLaunchIntentForPackage(YT_MUSIC)
         if (maps == null || media == null) {
-            toast(context, "Perlu Google Maps dan YouTube untuk Mod Pandu")
+            toast(context, "Split screen needs Google Maps and YouTube")
             return
         }
         maps.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -128,11 +128,11 @@ object Actions {
             ?.pkg
     }
 
-    /** Cari app berdasarkan nama; kalau tak jumpa, beritahu dan buka senarai semua app. */
+    /** Find an app by name; if none matches, say so and open All apps. */
     fun openByKeyword(context: Context, pattern: String, what: String, fallback: () -> Unit) {
         val pkg = findApp(context, pattern)
         if (pkg == null || !launchPackage(context, pkg)) {
-            toast(context, "App $what belum dikenal pasti. Pilih dari Semua app.")
+            toast(context, "Couldn't find the $what app. Pick it from All apps.")
             fallback()
         }
     }
@@ -141,12 +141,12 @@ object Actions {
         openByKeyword(context, "carplay|zlink|carlink|autolink|easyconn|tlink", "CarPlay", fallback)
 
     fun openCamera(context: Context, fallback: () -> Unit) =
-        openByKeyword(context, "avm|360|panoram", "Kamera 360", fallback)
+        openByKeyword(context, "avm|360|panoram", "Cameras", fallback)
 
     fun openClimate(context: Context, fallback: () -> Unit) =
-        openByKeyword(context, "aircon|climate|canbus|carinfo|carsetting", "A/C", fallback)
+        openByKeyword(context, "aircon|climate|canbus|carinfo|carsetting", "Climate", fallback)
 
-    /** Pintu keluar: pilih semula launcher asal Dynavin. */
+    /** Way back: pick the original Dynavin launcher again. */
     fun openHomeSettings(context: Context) {
         val home = Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         if (!start(context, home)) {
@@ -156,7 +156,7 @@ object Actions {
 
     fun openMediaAccessSettings(context: Context) {
         val i = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (!start(context, i)) toast(context, "Unit ini sorok tetapan akses notifikasi")
+        if (!start(context, i)) toast(context, "This unit hides the notification access setting")
     }
 }
 

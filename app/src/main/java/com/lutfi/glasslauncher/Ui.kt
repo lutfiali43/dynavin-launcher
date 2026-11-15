@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,7 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -44,15 +42,16 @@ import androidx.compose.material.icons.outlined.PhoneIphone
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SmartDisplay
-import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.VerticalSplit
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +71,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -81,110 +82,146 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-// ---------- Warna & gaya kaca ----------
+// ---------- Tokens ----------
+// Graphite cabin at dusk, one warm horizon glow, champagne trim as the only accent.
 
-val Accent = Color(0xFFFF8A3D)
-val OnAccent = Color(0xFF1A0D00)
-val Bg = Color(0xFF0B1024)
-val TextSoft = Color.White.copy(alpha = 0.82f)
+val Night = Color(0xFF121316)
+val Ink = Color(0xFFF4F2EE)
+val InkSoft = Ink.copy(alpha = 0.66f)
+val Champagne = Color(0xFFE3CFA8)
+val OnChampagne = Color(0xFF1A1712)
+val Horizon = Color(0xFFC9894A)
 
-/** Latar: biru gelap + cahaya oren, biru dan ungu. Dilukis sekali, tiada blur live (laju). */
-fun Modifier.glowBackground(): Modifier = this.drawBehind {
-    drawRect(Bg)
-    fun glow(color: Color, cx: Float, cy: Float, r: Float) {
-        val center = Offset(size.width * cx, size.height * cy)
-        val radius = size.width * r
-        drawCircle(
-            brush = Brush.radialGradient(listOf(color, Color.Transparent), center = center, radius = radius),
-            radius = radius,
-            center = center
-        )
-    }
-    glow(Color(0x8CFF8030), 0.18f, 0.22f, 0.42f)
-    glow(Color(0x99286EFF), 0.82f, 0.78f, 0.45f)
-    glow(Color(0x59963CFF), 0.70f, 0.10f, 0.40f)
+// Barlow: a grotesk drawn from highway signage, made to be read at a glance.
+val Barlow = FontFamily(
+    Font(R.font.barlow_regular, FontWeight.Normal),
+    Font(R.font.barlow_medium, FontWeight.Medium),
+    Font(R.font.barlow_semibold, FontWeight.SemiBold)
+)
+val BarlowCondensed = FontFamily(
+    Font(R.font.barlow_semicondensed_medium, FontWeight.Medium),
+    Font(R.font.barlow_semicondensed_semibold, FontWeight.SemiBold)
+)
+
+@Composable
+fun GlassTheme(content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalTextStyle provides TextStyle(fontFamily = Barlow, color = Ink, fontSize = 18.sp),
+        content = content
+    )
 }
 
-/** Panel kaca: putih separa lutsinar + garis tepi halus. */
-fun Modifier.glass(radius: Dp = 28.dp, alpha: Float = 0.12f): Modifier {
+/** Graphite background with a single warm glow along the bottom edge. Drawn once, no live blur. */
+fun Modifier.horizonBackground(): Modifier = this.drawBehind {
+    drawRect(Night)
+    val warmCenter = Offset(size.width * 0.5f, size.height * 1.12f)
+    val warmRadius = size.width * 0.62f
+    drawCircle(
+        brush = Brush.radialGradient(listOf(Horizon.copy(alpha = 0.5f), Color.Transparent), warmCenter, warmRadius),
+        radius = warmRadius,
+        center = warmCenter
+    )
+    val coolCenter = Offset(size.width * 0.94f, 0f)
+    val coolRadius = size.width * 0.32f
+    drawCircle(
+        brush = Brush.radialGradient(listOf(Color(0x38788CAA), Color.Transparent), coolCenter, coolRadius),
+        radius = coolRadius,
+        center = coolCenter
+    )
+}
+
+/** Glass panel: faint white fill, hairline edge that is brighter on top (light from above). */
+fun Modifier.glass(radius: Dp = 24.dp, fill: Float = 0.07f): Modifier {
     val shape = RoundedCornerShape(radius)
     return this
         .clip(shape)
-        .background(Color.White.copy(alpha = alpha))
-        .border(1.dp, Color.White.copy(alpha = 0.28f), shape)
+        .background(Color.White.copy(alpha = fill))
+        .border(
+            1.dp,
+            Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.26f), Color.White.copy(alpha = 0.10f))),
+            shape
+        )
 }
 
-// ---------- Skrin utama ----------
+// ---------- Home ----------
 
 @Composable
 fun HomeScreen(onOpenDrawer: () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-            MapsCard(Modifier.weight(1.55f).fillMaxHeight())
-            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                ClockCard(Modifier.fillMaxWidth())
-                MediaCard(Modifier.fillMaxWidth().weight(1f))
+    Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                ClockHeader()
+                NavigationPanel(Modifier.fillMaxWidth().weight(1f))
             }
+            NowPlayingPanel(Modifier.width(420.dp).fillMaxHeight())
         }
         Dock(onOpenDrawer)
     }
 }
 
 @Composable
-fun Pill(icon: ImageVector, label: String) {
-    Row(
-        Modifier.glass(radius = 999.dp, alpha = 0.16f).padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-        Text(label, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+fun ClockHeader() {
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            now = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
+    val date = Date(now)
+    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        Text(
+            SimpleDateFormat("HH:mm", Locale.UK).format(date),
+            fontFamily = BarlowCondensed,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 128.sp,
+            lineHeight = 116.sp,
+            letterSpacing = (-2).sp,
+            style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum")
+        )
+        Text(
+            SimpleDateFormat("EEEE, d MMMM", Locale.UK).format(date),
+            color = InkSoft,
+            fontSize = 22.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
     }
 }
 
 @Composable
-fun MapsCard(modifier: Modifier) {
+fun NavigationPanel(modifier: Modifier) {
     val context = LocalContext.current
     val prefs = remember { Prefs(context) }
     var home by remember { mutableStateOf(prefs.get("home")) }
     var office by remember { mutableStateOf(prefs.get("office")) }
     var editing by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier.glass().padding(28.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Pill(Icons.Outlined.Place, "Google Maps")
-        Text(
-            "Ke mana hari ni?",
-            color = Color.White,
-            fontSize = 52.sp,
-            lineHeight = 56.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            DestinationButton(
-                Modifier.weight(1f), Icons.Outlined.Home, "Rumah",
-                if (home.isBlank()) "Tekan untuk set alamat" else home,
-                accent = false,
+    Column(modifier.glass().padding(32.dp), verticalArrangement = Arrangement.SpaceBetween) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Navigate", fontFamily = BarlowCondensed, fontWeight = FontWeight.SemiBold, fontSize = 36.sp)
+            Text("Opens Google Maps with directions", color = InkSoft, fontSize = 18.sp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Destination(
+                Modifier.weight(1f), Icons.Outlined.Home, "Home",
+                if (home.isBlank()) "Tap to set address" else home,
+                primary = false,
                 onClick = { if (home.isBlank()) editing = "home" else Actions.navigate(context, home) },
                 onLongClick = { editing = "home" }
             )
-            DestinationButton(
-                Modifier.weight(1f), Icons.Outlined.Work, "Pejabat",
-                if (office.isBlank()) "Tekan untuk set alamat" else office,
-                accent = false,
+            Destination(
+                Modifier.weight(1f), Icons.Outlined.Work, "Office",
+                if (office.isBlank()) "Tap to set address" else office,
+                primary = false,
                 onClick = { if (office.isBlank()) editing = "office" else Actions.navigate(context, office) },
                 onLongClick = { editing = "office" }
             )
-            DestinationButton(
-                Modifier.weight(1f), Icons.Filled.Navigation, "Navigasi", "Buka Google Maps",
-                accent = true,
+            Destination(
+                Modifier.weight(1f), Icons.Outlined.Search, "Search Maps", "Any destination",
+                primary = true,
                 onClick = { Actions.openMaps(context) },
                 onLongClick = { Actions.openMaps(context) }
             )
@@ -193,11 +230,12 @@ fun MapsCard(modifier: Modifier) {
 
     editing?.let { key ->
         AddressDialog(
-            title = if (key == "home") "Alamat Rumah" else "Alamat Pejabat",
+            title = if (key == "home") "Home address" else "Office address",
             initial = prefs.get(key),
             onSave = { value ->
-                prefs.set(key, value.trim())
-                if (key == "home") home = value.trim() else office = value.trim()
+                val v = value.trim()
+                prefs.set(key, v)
+                if (key == "home") home = v else office = v
                 editing = null
             },
             onDismiss = { editing = null }
@@ -207,32 +245,35 @@ fun MapsCard(modifier: Modifier) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun DestinationButton(
+fun Destination(
     modifier: Modifier,
     icon: ImageVector,
     title: String,
     subtitle: String,
-    accent: Boolean,
+    primary: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(20.dp)
-    val fg = if (accent) OnAccent else Color.White
+    val shape = RoundedCornerShape(16.dp)
+    val fg = if (primary) OnChampagne else Ink
+    val base = modifier.clip(shape)
+    val styled = if (primary) {
+        base.background(Champagne)
+    } else {
+        base.background(Color.White.copy(alpha = 0.08f)).border(1.dp, Color.White.copy(alpha = 0.16f), shape)
+    }
     Column(
-        modifier
-            .clip(shape)
-            .background(if (accent) Accent else Color.White.copy(alpha = 0.18f))
-            .border(1.dp, Color.White.copy(alpha = 0.3f), shape)
+        styled
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(28.dp))
-        Text(title, color = fg, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        Text(title, color = fg, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         Text(
             subtitle,
-            color = fg.copy(alpha = 0.8f),
-            fontSize = 13.sp,
+            color = fg.copy(alpha = 0.72f),
+            fontSize = 16.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -244,71 +285,32 @@ fun AddressDialog(title: String, initial: String, onSave: (String) -> Unit, onDi
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(title, fontFamily = Barlow) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Taip alamat atau nama tempat, sama macam cari dalam Google Maps.")
+                Text("Type an address or place name, the same way you'd search in Google Maps.", fontFamily = Barlow)
                 OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true)
-                Text("Tip: tekan lama butang ni untuk tukar alamat nanti.", fontSize = 13.sp)
+                Text("Press and hold the button later to change it.", fontFamily = Barlow, fontSize = 14.sp)
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }) { Text("Simpan") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
+        confirmButton = { TextButton(onClick = { onSave(text) }) { Text("Save address", fontFamily = Barlow) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", fontFamily = Barlow) } }
     )
 }
 
-@Composable
-fun ClockCard(modifier: Modifier) {
-    var now by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            now = System.currentTimeMillis()
-            delay(1000)
-        }
-    }
-    val ms = Locale("ms", "MY")
-    val date = Date(now)
-    val hour = Calendar.getInstance().apply { timeInMillis = now }.get(Calendar.HOUR_OF_DAY)
-    val greeting = when (hour) {
-        in 5..11 -> "Selamat pagi,"
-        in 12..13 -> "Selamat tengah hari,"
-        in 14..18 -> "Selamat petang,"
-        else -> "Selamat malam,"
-    }
-
-    Row(
-        modifier.glass().padding(horizontal = 26.dp, vertical = 22.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                SimpleDateFormat("HH:mm", ms).format(date),
-                color = Color.White,
-                fontSize = 72.sp,
-                lineHeight = 72.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(SimpleDateFormat("EEEE, d MMMM", ms).format(date), color = TextSoft, fontSize = 18.sp)
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(greeting, color = TextSoft, fontSize = 16.sp)
-            Text("Lutfi", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-// ---------- Kad "Sedang main" ----------
+// ---------- Now playing ----------
 
 private data class NowPlaying(
     val controller: MediaController?,
     val title: String,
     val artist: String,
     val playing: Boolean,
-    val art: Bitmap?
+    val art: Bitmap?,
+    val app: String
 )
 
 @Composable
-fun MediaCard(modifier: Modifier) {
+fun NowPlayingPanel(modifier: Modifier) {
     val context = LocalContext.current
     var access by remember { mutableStateOf(Media.hasAccess(context)) }
     var np by remember { mutableStateOf<NowPlaying?>(null) }
@@ -319,6 +321,12 @@ fun MediaCard(modifier: Modifier) {
             val c = Media.current(context)
             np = if (c == null) null else {
                 val md = c.metadata
+                val appLabel = try {
+                    val pm = context.packageManager
+                    pm.getApplicationLabel(pm.getApplicationInfo(c.packageName, 0)).toString()
+                } catch (e: Exception) {
+                    ""
+                }
                 NowPlaying(
                     controller = c,
                     title = md?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "",
@@ -326,66 +334,63 @@ fun MediaCard(modifier: Modifier) {
                         ?: md?.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE) ?: "",
                     playing = c.playbackState?.state == PlaybackState.STATE_PLAYING,
                     art = md?.getBitmap(MediaMetadata.METADATA_KEY_ART)
-                        ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                        ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART),
+                    app = appLabel
                 )
             }
             delay(1000)
         }
     }
 
-    Column(modifier.glass().padding(horizontal = 26.dp, vertical = 22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(Icons.Outlined.SmartDisplay, contentDescription = null, tint = Color(0xFFFF4D4D), modifier = Modifier.size(22.dp))
-            Text("Sedang main", color = TextSoft, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+    val current = np
+    Column(modifier.glass().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(Icons.Outlined.SmartDisplay, contentDescription = null, tint = InkSoft, modifier = Modifier.size(20.dp))
+            Text(current?.app?.ifBlank { null } ?: "YouTube", color = InkSoft, fontSize = 16.sp)
         }
 
-        val current = np
+        val artShape = RoundedCornerShape(16.dp)
+        val artModifier = Modifier.fillMaxWidth().weight(1f).clip(artShape)
+        val art: ImageBitmap? = remember(current?.art) { current?.art?.asImageBitmap() }
+        if (art != null) {
+            Image(art, contentDescription = null, contentScale = ContentScale.Crop, modifier = artModifier)
+        } else {
+            Box(artModifier.background(Brush.linearGradient(listOf(Color(0xFF3A3330), Color(0xFF1C1D21)))))
+        }
+
         when {
             !access -> {
-                Text(
-                    "Benarkan akses supaya kad ni boleh tunjuk dan kawal YouTube.",
-                    color = Color.White, fontSize = 17.sp
-                )
-                Spacer(Modifier.weight(1f))
-                GlassButton("Benarkan akses", accent = true) { Actions.openMediaAccessSettings(context) }
+                Text("Show what's playing", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Text("Allow notification access once so this panel can show and control YouTube.", color = InkSoft, fontSize = 16.sp)
+                PanelButton("Allow access") { Actions.openMediaAccessSettings(context) }
             }
             current == null -> {
-                Text("Tiada media sedang main", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.weight(1f))
-                GlassButton("Buka YouTube", accent = true) { Actions.openYouTube(context) }
+                Text("Nothing playing", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+                Text("Start a podcast or playlist and it shows up here.", color = InkSoft, fontSize = 16.sp)
+                PanelButton("Open YouTube") { Actions.openYouTube(context) }
             }
             else -> {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    val art: ImageBitmap? = remember(current.art) { current.art?.asImageBitmap() }
-                    val artMod = Modifier.size(84.dp).clip(RoundedCornerShape(18.dp))
-                    if (art != null) {
-                        Image(art, contentDescription = null, contentScale = ContentScale.Crop, modifier = artMod)
-                    } else {
-                        Box(artMod.background(Brush.linearGradient(listOf(Accent, Color(0xFF6A3DFF)))))
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            current.title.ifBlank { "Tanpa tajuk" },
-                            color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis
-                        )
-                        Text(current.artist, color = TextSoft, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        current.title.ifBlank { "Untitled" },
+                        fontSize = 24.sp, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis
+                    )
+                    Text(current.artist, color = InkSoft, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Spacer(Modifier.weight(1f))
                 val tc = current.controller?.transportControls
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    RoundButton(Icons.Filled.SkipPrevious, "Sebelum", big = false) { tc?.skipToPrevious() }
+                    RoundButton(Icons.Filled.SkipPrevious, "Previous", big = false) { tc?.skipToPrevious() }
                     RoundButton(
                         if (current.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        if (current.playing) "Jeda" else "Main",
+                        if (current.playing) "Pause" else "Play",
                         big = true
                     ) { if (current.playing) tc?.pause() else tc?.play() }
-                    RoundButton(Icons.Filled.SkipNext, "Seterusnya", big = false) { tc?.skipToNext() }
+                    RoundButton(Icons.Filled.SkipNext, "Next", big = false) { tc?.skipToNext() }
                 }
             }
         }
@@ -394,82 +399,74 @@ fun MediaCard(modifier: Modifier) {
 
 @Composable
 fun RoundButton(icon: ImageVector, label: String, big: Boolean, onClick: () -> Unit) {
-    val s = if (big) 84.dp else 64.dp
-    Box(
-        Modifier
-            .size(s)
-            .clip(CircleShape)
-            .background(if (big) Color.White else Color.White.copy(alpha = 0.14f))
-            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(icon, contentDescription = label, tint = if (big) Bg else Color.White, modifier = Modifier.size(if (big) 36.dp else 28.dp))
+    val s = if (big) 88.dp else 64.dp
+    val m = Modifier.size(s).clip(CircleShape)
+    val styled = if (big) m.background(Ink) else m.border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+    Box(styled.clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = label, tint = if (big) Night else Ink, modifier = Modifier.size(if (big) 36.dp else 28.dp))
     }
 }
 
 @Composable
-fun GlassButton(label: String, accent: Boolean, onClick: () -> Unit) {
+fun PanelButton(label: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(16.dp)
     Box(
         Modifier
             .fillMaxWidth()
             .height(56.dp)
             .clip(shape)
-            .background(if (accent) Accent else Color.White.copy(alpha = 0.16f))
+            .border(1.dp, Color.White.copy(alpha = 0.24f), shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = if (accent) OnAccent else Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
-// ---------- Dok ----------
+// ---------- Dock ----------
 
 @Composable
 fun Dock(onOpenDrawer: () -> Unit) {
     val context = LocalContext.current
     Row(
-        Modifier.fillMaxWidth().glass(radius = 26.dp).padding(horizontal = 18.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
+        Modifier.fillMaxWidth().glass(radius = 20.dp, fill = 0.06f).padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         DockItem(Icons.Outlined.Place, "Maps") { Actions.openMaps(context) }
         DockItem(Icons.Outlined.SmartDisplay, "YouTube") { Actions.openYouTube(context) }
-        DockItem(Icons.Outlined.VerticalSplit, "Mod Pandu", accent = true) { Actions.driveMode(context) }
+        DockItem(Icons.Outlined.VerticalSplit, "Split screen") { Actions.driveMode(context) }
         DockItem(Icons.Outlined.PhoneIphone, "CarPlay") { Actions.openCarPlay(context, onOpenDrawer) }
-        DockItem(Icons.Outlined.CameraAlt, "Kamera 360") { Actions.openCamera(context, onOpenDrawer) }
-        DockItem(Icons.Outlined.AcUnit, "A/C") { Actions.openClimate(context, onOpenDrawer) }
-        DockItem(Icons.Outlined.Apps, "Semua app", onClick = onOpenDrawer)
+        DockItem(Icons.Outlined.CameraAlt, "Cameras") { Actions.openCamera(context, onOpenDrawer) }
+        DockItem(Icons.Outlined.AcUnit, "Climate") { Actions.openClimate(context, onOpenDrawer) }
+        DockItem(Icons.Outlined.Apps, "All apps", onClick = onOpenDrawer)
     }
 }
 
 @Composable
-fun RowScope.DockItem(icon: ImageVector, label: String, accent: Boolean = false, onClick: () -> Unit) {
-    val fg = if (accent) OnAccent else Color.White
+fun DockItem(icon: ImageVector, label: String, onClick: () -> Unit) {
     Column(
         Modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(if (accent) Accent else Color.Transparent)
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
-            .width(if (accent) 124.dp else 100.dp)
+            .width(128.dp)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(30.dp))
-        Text(label, color = fg, fontSize = 14.sp, fontWeight = if (accent) FontWeight.SemiBold else FontWeight.Medium)
+        Icon(icon, contentDescription = null, tint = Ink, modifier = Modifier.size(28.dp))
+        Text(label, fontSize = 16.sp, fontWeight = FontWeight.Medium)
     }
 }
 
-// ---------- Semua app ----------
+// ---------- All apps ----------
 
 private class AppWithIcon(val app: AppEntry, val icon: ImageBitmap?)
 
 @Composable
 fun AppDrawer(onClose: () -> Unit) {
     val context = LocalContext.current
-    var apps by remember { mutableStateOf<List<AppWithIcon>>(emptyList()) }
+    var apps by remember { mutableStateOf<List<AppWithIcon>?>(null) }
     var query by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -477,81 +474,84 @@ fun AppDrawer(onClose: () -> Unit) {
             Apps.launchables(context).map { AppWithIcon(it, Apps.icon(context, it)) }
         }
     }
-    val shown = if (query.isBlank()) apps else apps.filter { it.app.label.contains(query.trim(), ignoreCase = true) }
+    val all = apps
+    val shown = when {
+        all == null -> emptyList()
+        query.isBlank() -> all
+        else -> all.filter { it.app.label.contains(query.trim(), ignoreCase = true) }
+    }
 
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+    Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(
-                Modifier.size(56.dp).glass(radius = 16.dp, alpha = 0.14f).clickable(onClick = onClose),
-                contentAlignment = Alignment.Center
+            Row(
+                Modifier.height(56.dp).glass(radius = 16.dp).clickable(onClick = onClose).padding(start = 14.dp, end = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Kembali", tint = Color.White)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null, tint = Ink)
+                Text("Home", fontSize = 18.sp, fontWeight = FontWeight.Medium)
             }
-            Text("Semua app", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
+            Text("All apps", fontFamily = BarlowCondensed, fontWeight = FontWeight.SemiBold, fontSize = 36.sp)
             Spacer(Modifier.weight(1f))
             Row(
-                Modifier.width(360.dp).height(56.dp).glass(radius = 16.dp, alpha = 0.14f).padding(horizontal = 18.dp),
+                Modifier.width(360.dp).height(56.dp).glass(radius = 16.dp).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Outlined.Search, contentDescription = null, tint = Color.White)
+                Icon(Icons.Outlined.Search, contentDescription = null, tint = Ink)
                 Box(Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text("Cari app", color = TextSoft, fontSize = 18.sp)
+                    if (query.isEmpty()) Text("Search apps", color = InkSoft, fontSize = 18.sp)
                     BasicTextField(
                         value = query,
                         onValueChange = { query = it },
                         singleLine = true,
-                        textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
-                        cursorBrush = SolidColor(Accent),
+                        textStyle = TextStyle(fontFamily = Barlow, color = Ink, fontSize = 18.sp),
+                        cursorBrush = SolidColor(Champagne),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
-            Row(
-                Modifier.height(56.dp).glass(radius = 16.dp, alpha = 0.14f)
+            Box(
+                Modifier.height(56.dp).clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
                     .clickable { Actions.openHomeSettings(context) }
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Outlined.SwapHoriz, contentDescription = null, tint = Color.White)
-                Text("Tukar launcher", color = Color.White, fontSize = 15.sp)
+                Text("Switch launcher", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             }
         }
 
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(132.dp),
-            modifier = Modifier.weight(1f).fillMaxWidth().glass().padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(shown, key = { it.app.pkg + "/" + it.app.cls }) { item ->
-                Column(
-                    Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable { Apps.launch(context, item.app); onClose() }
-                        .padding(vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+        Box(Modifier.weight(1f).fillMaxWidth().glass(fill = 0.05f).padding(24.dp)) {
+            when {
+                all == null -> Text("Loading apps…", color = InkSoft, modifier = Modifier.align(Alignment.Center))
+                shown.isEmpty() -> Text("No apps match “$query”", color = InkSoft, modifier = Modifier.align(Alignment.Center))
+                else -> LazyVerticalGrid(
+                    columns = GridCells.Adaptive(128.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    val icon = item.icon
-                    if (icon != null) {
-                        Image(icon, contentDescription = null, modifier = Modifier.size(72.dp))
-                    } else {
-                        Box(
-                            Modifier.size(72.dp).glass(radius = 20.dp, alpha = 0.2f),
-                            contentAlignment = Alignment.Center
+                    items(shown, key = { it.app.pkg + "/" + it.app.cls }) { item ->
+                        Column(
+                            Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { Apps.launch(context, item.app); onClose() }
+                                .padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(item.app.label.take(1), color = Color.White, fontSize = 28.sp)
+                            val icon = item.icon
+                            if (icon != null) {
+                                Image(icon, contentDescription = null, modifier = Modifier.size(72.dp))
+                            } else {
+                                Box(Modifier.size(72.dp).glass(radius = 18.dp, fill = 0.12f), contentAlignment = Alignment.Center) {
+                                    Text(item.app.label.take(1), fontFamily = BarlowCondensed, fontSize = 28.sp)
+                                }
+                            }
+                            Text(item.app.label, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
-                    Text(
-                        item.app.label,
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
             }
         }

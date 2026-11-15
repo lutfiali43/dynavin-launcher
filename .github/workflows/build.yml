@@ -1,4 +1,4 @@
-name: Bina APK
+name: Build APK
 
 on:
   push:
@@ -23,17 +23,17 @@ jobs:
         with:
           gradle-version: "8.10.2"
 
-      - name: Bina APK
+      - name: Build APK
         run: gradle :app:assembleRelease --no-daemon --stacktrace
 
-      - name: Namakan APK
+      - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk launcher.apk
 
-      - name: Terbitkan ke Releases
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.${{ github.run_number }}
-          name: Glass Launcher v0.1.${{ github.run_number }}
-          body: "Muat turun launcher.apk di bawah, buka dengan File Manager di head unit, dan install."
+          tag_name: v0.2.${{ github.run_number }}
+          name: Glass Launcher v0.2.${{ github.run_number }}
+          body: "Download launcher.apk below, open it with the File Manager on the head unit, and install."
           files: launcher.apk
           make_latest: true

@@ -1,23 +1,24 @@
-# Glass Launcher untuk Dynavin (Toyota Alphard AGH30)
+# Glass Launcher for Dynavin (Toyota Alphard AGH30)
 
-Launcher Android ringan dengan gaya kaca (glassmorphism) untuk head unit Dynavin V40 (Android 14).
+A light, glass-style Android launcher for the Dynavin V40 head unit (Android 14).
 
-## Muat turun (link tetap, sentiasa versi terbaru)
+## Download (fixed link, always the newest version)
 
 https://github.com/lutfiali43/dynavin-launcher/releases/latest/download/launcher.apk
 
-Buka link ini di browser head unit → buka fail dengan File Manager → Install.
+Open this link in the head unit's browser, open the file with the File Manager, then install.
 
-## Ciri v0.1
-- Kad Google Maps: Rumah, Pejabat (tekan lama untuk set alamat), Navigasi
-- Kad "Sedang main": tunjuk & kawal YouTube / YouTube Music (perlu "Benarkan akses" sekali)
-- Jam dan tarikh dalam Bahasa Melayu
-- Dok: Maps, YouTube, Mod Pandu (skrin terbelah), CarPlay, Kamera 360, A/C, Semua app
-- Semua app: senarai app dengan carian, dan butang "Tukar launcher"
+## What's in it
+- Navigate panel: Home and Office (press and hold to set the address), Search Maps
+- Now playing: shows and controls YouTube or YouTube Music (allow notification access once)
+- Large clock and date
+- Dock: Maps, YouTube, Split screen, CarPlay, Cameras, Climate, All apps
+- All apps: app grid with search and a Switch launcher button
 
-## Patah balik ke launcher asal Dynavin
-Semua app → Tukar launcher → pilih launcher Dynavin.
-Atau Settings → Apps → Default apps → Home app.
-Atau uninstall Glass Launcher.
+## Going back to the Dynavin launcher
+All apps → Switch launcher → pick the Dynavin launcher.
+Or Settings → Apps → Default apps → Home app. Or uninstall Glass Launcher.
 
-Launcher ini tidak root, tidak ubah tetapan kereta, kamera atau Factory settings.
+The launcher doesn't root the unit or touch car, camera or factory settings.
+
+Font: Barlow by Jeremy Tribby, SIL Open Font License (see FONT-LICENSE-Barlow.txt).
