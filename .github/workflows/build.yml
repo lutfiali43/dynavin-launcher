@@ -1,0 +1,39 @@
+name: Bina APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Bina APK
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Namakan APK
+        run: cp app/build/outputs/apk/release/app-release.apk launcher.apk
+
+      - name: Terbitkan ke Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.1.${{ github.run_number }}
+          name: Glass Launcher v0.1.${{ github.run_number }}
+          body: "Muat turun launcher.apk di bawah, buka dengan File Manager di head unit, dan install."
+          files: launcher.apk
+          make_latest: true
